@@ -7,6 +7,7 @@ if [ "$JOB" == "5.7.0" ]
 		./configure -shared -release -silent -opensource -confirm-license -opengl -nomake examples -qt-xcb -sm -qt-libpng -no-libjpeg -no-icu -qt-zlib -qt-pcre
 		make -j$(nproc)
 		make install
+		cd ..
 		mkdir build
 		/usr/local/Qt-5.7.0/bin/qmake ..
 		make -j$(nproc)
