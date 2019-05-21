@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QScreen>
 #include <AppImageUpdaterDialog>
 #include <Bridge.hpp>
 
@@ -22,6 +23,7 @@ Bridge::Bridge(QObject *parent)
 						  AppImageUpdaterDialog::ShowErrorDialog/*|
 						  AppImageUpdaterDialog::AlertWhenAuthorizationIsRequired*/));
     connect(m_Dialog.data() , &AppImageUpdaterDialog::quit , instance , &QApplication::quit);
+    m_Dialog->move(QGuiApplication::primaryScreen()->geometry().center() - m_Dialog->rect().center());
 }
 
 void Bridge::initAutoUpdate()
