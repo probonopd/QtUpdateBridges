@@ -16,12 +16,13 @@ using AppImageUpdaterBridge::AppImageUpdaterDialog;
 static bool integrate_menu(QWidget *widget , AppImageUpdaterDialog *dialog){
 	auto menuBar = qobject_cast<QMenuBar*>(widget);
 	if(!menuBar){
-		return -1;
+		return false;
 	}
 	auto checkForUpdateAction = menuBar->addAction(QString::fromUtf8("Check for Update"));
-	QObject::connect(dialog , &AppImageUpdaterDialog::init , 
-			checkForUpdateAction , &QAction::trigger , Qt::QueuedConnection);
-	return 0;
+	QObject::connect(checkForUpdateAction , &QAction::trigger , 
+			dialog , &AppImageUpdaterDialog::init , 
+			Qt::QueuedConnection);
+	return true;
 }
 
 Bridge::Bridge(QObject *parent)
@@ -84,8 +85,7 @@ void Bridge::initAutoUpdate()
 		foreach (QWidget *widget , QApplication::allWidgets()){
 			/* Try and check if its QMenuBar ,
 			 * if so then simply integrate */
-			if(!(integrated = integrate_menu(widget , m_Dialog.data()))){
-				
+			if(!(integrated = integrate_menu(widget , m_Dialog.data()))){	
 				break;
 			}
 			QCoreApplication::processEvents();
