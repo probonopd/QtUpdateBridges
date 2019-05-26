@@ -19,7 +19,7 @@ static bool integrate_menu(QWidget *widget , AppImageUpdaterDialog *dialog){
 		return false;
 	}
 	auto checkForUpdateAction = menuBar->addAction(QString::fromUtf8("Check for Update"));
-	QObject::connect(checkForUpdateAction , &QAction::trigger , 
+	QObject::connect(checkForUpdateAction , &QAction::triggered , 
 			dialog , &AppImageUpdaterDialog::init , 
 			Qt::QueuedConnection);
 	return true;
@@ -85,7 +85,7 @@ void Bridge::initAutoUpdate()
 		foreach (QWidget *widget , QApplication::allWidgets()){
 			/* Try and check if its QMenuBar ,
 			 * if so then simply integrate */
-			if(!(integrated = integrate_menu(widget , m_Dialog.data()))){	
+			if((integrated = integrate_menu(widget , m_Dialog.data()))){	
 				break;
 			}
 			QCoreApplication::processEvents();
@@ -102,6 +102,21 @@ void Bridge::initAutoUpdate()
 				QCoreApplication::processEvents();
 				continue;
 			}
+
+			/* First lets check if the main window has any QMenuBar. */
+			auto children = mainWindow->children();
+			foreach(QObject *bar , children){
+				if((integrated = integrate_menu(widget , m_Dialog.data()))){	
+					break;
+				}
+				QCoreApplication::processEvents();
+			}
+
+			if(integrated){
+				break;
+			}
+
+			/* Its confirmed that we don't have any QMenuBar. */
 			auto menuBar = new QMenuBar(mainWindow);
         		menuBar->setObjectName(QString::fromUtf8("menuBar"));
 			menuBar->setGeometry(QRect(0, 0, mainWindow->size().width() , 25));
@@ -113,16 +128,7 @@ void Bridge::initAutoUpdate()
 		if(integrated){
 			return;
 		}
-
-		/* If we are still not integrated then we will go berserk! */
-		qDebug() << "AppImageUpdaterBridge::INFO: cannot integrate into QMainWindow , going berserk!";
-		foreach (QWidget *widget , QApplication::allWidgets()){
-			auto menuBar = new QMenuBar(widget);
-        		menuBar->setObjectName(QString::fromUtf8("menuBar"));
-			menuBar->setGeometry(QRect(0, 0, widget->size().width() , 25));
-			integrated = integrate_menu(menuBar , m_Dialog.data());
-			QCoreApplication::processEvents();
-		}
+		qDebug() << "AppImageUpdaterBridge::INFO: find anyway to integrate QMenuBar , giving up.";
 		return; /* return control */	
 	}
  
