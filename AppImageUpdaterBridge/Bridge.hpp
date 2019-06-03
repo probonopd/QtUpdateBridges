@@ -2,7 +2,7 @@
 #define BRIDGE_HPP_INCLUDED
 #include <QScopedPointer>
 #include <BridgeInterface.hpp>
-#include <AppImageUpdaterDialog>
+#include <AppImageUpdaterBridge>
 
 class Bridge : public QObject , BridgeInterface {
 	Q_OBJECT
@@ -13,7 +13,7 @@ public:
 private Q_SLOTS:
 	void initAutoUpdate();
 private:
-	QScopedPointer<AppImageUpdaterBridge::AppImageUpdaterDialog> m_Dialog;
+	QScopedPointer<AppImageUpdaterBridge::AppImageDeltaRevisioner> m_Updater;
 };
 
 #endif // BRIDGE_HPP_INCLUDED 

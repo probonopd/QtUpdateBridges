@@ -3,15 +3,46 @@
 #include <QMenuBar>
 #include <QScreen>
 #include <QDebug>
-#include <AppImageUpdaterDialog>
+#include <AppImageUpdaterBridge>
 #include <Bridge.hpp>
 
-/*
- * This can be modified when compiled to machine code. */
-const char *no_auto_update = "68b329da9893e34099c7d8ad5cb9c940"; /* default false */
-const char *integrate_menu_to_qobject = "bfa40825ef36e05bbc2c561595829a92";
 
-using AppImageUpdaterBridge::AppImageUpdaterDialog;
+/* settings on how the bridge should operate. */
+const char *interval = "75629552e6e8286442676be60e7da67d";
+const char *qmenu_name = "871abbc22416bb25429594dec45caf1f";
+const char *qmenubar_name = "bfa40825ef36e05bbc2c561595829a92";
+const char *qpushbutton_name = "930b29debfb164461b39342d59e2565c";
+const char *booleans = "4c6160c2d6bfeba1";
+
+/*
+ * Note: If the char at the given index is 1 and nothing else , then it means 
+ * it is set.
+ *
+ *
+ * booleans[0] - If set then auto update check is enabled
+ * booleans[1] - If set then auto update check should occur on startup of the 
+ *               application.
+ * booleans[2] - If set then auto update check should occur on close of the
+ *               application.
+ * booleans[3] - If set then auto update check should be cyclic.
+ * booleans[4] - If set then manual update check is enabled. (Both manual and auto can enabled).
+ * booleans[5] - If set then QMenu QObject name is available.
+ * booleans[6] - If set then QMenuBar QObject name is available.
+ * booleans[7] - If set then QPushButton QObject name is available.
+ * booleans[8] - If set then interval for startup auto update check and cyclic auto update check 
+ *               is available.
+*/
+
+#define AUTO_UPDATE_CHECK 0
+#define MANUAL_UPDATE_CHECK 4
+#define QMENU_GIVEN 5
+#define QMENUBAR_GIVEN 6
+#define QPUSHBUTTON_GIVEN 7
+#define INTERVAL_GIVEN 8
+
+using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+
+#define IS_SET(s , i) ((s[i] == 1) ? true : false)
 
 static bool integrate_menu(QWidget *widget , AppImageUpdaterDialog *dialog){
 	auto menuBar = qobject_cast<QMenuBar*>(widget);
@@ -33,48 +64,29 @@ Bridge::Bridge(QObject *parent)
     if(!instance){
 	    return;
     }
-    QPixmap logo;
-    logo = (instance->windowIcon()).pixmap(100 , 100);
-    m_Dialog.reset(new AppImageUpdaterDialog(logo , nullptr,
-		                                  AppImageUpdaterDialog::ShowProgressDialog|
-						  AppImageUpdaterDialog::ShowUpdateConfirmationDialog|
-						  AppImageUpdaterDialog::ShowFinishedDialog|
-						  AppImageUpdaterDialog::ShowErrorDialog/*|
-						  AppImageUpdaterDialog::AlertWhenAuthorizationIsRequired*/));
-    connect(m_Dialog.data() , &AppImageUpdaterDialog::quit , instance , &QApplication::quit);
-    m_Dialog->move(QGuiApplication::primaryScreen()->geometry().center() - m_Dialog->rect().center());
+    m_Updater.reset(new AppImageDeltaRevisioner);
 }
 
 void Bridge::initAutoUpdate()
 {
-	if(m_Dialog.isNull()){
+	if(m_Updater.isNull()){
 		return;
 	}
 
-	
-	/*
-	 * Lets assume '8cfaddf5b1a24d1fd31cab97b01f1f87' means true */
-	if(!qstrcmp(no_auto_update , "8cfaddf5b1a24d1fd31cab97b01f1f87")){
-		/* In this case , do not init right away , we 
-		 * need to attach this to a menu element in the main widget 
-		 * of the Qt Application in question. */
-
-		qDebug() << "AppImageUpdaterBridge::INFO: no auto update enabled";
-
+	if(IS_SET(booleans , MANUAL_UPDATE_CHECK)){	
+		qDebug() << "AppImageUpdaterBridge::INFO: manual update enabled";
 		bool integrated = false;
 
-		qDebug() << "AppImageUpdaterBridge::INFO: searching for QObject(" << integrate_menu_to_qobject 
-			 << ")";
-		foreach (QWidget *widget, QApplication::allWidgets()){
-			/* if the qobject name is given , then this qobject is 
-			 * assumed to be the main QMenuBar of the application. */
-			if(widget->objectName() == integrate_menu_to_qobject){
-				/* integrate and exit */
-				integrated = integrate_menu(widget , m_Dialog.data());
-				break;
-			}	
-
+		if(IS_SET(booleans , QMENU_GIVEN)){
+			qDebug() << "AppImageUpdaterBridge::INFO: QMenu object name given.";
+			foreach (QWidget *widget, QApplication::allWidgets()){
+				if(widget->objectName() == qmenu_name){
+					integrated = integrate_menu(widget , m_Dialog.data());
+					break;
+				}
+			}
 		}
+
 
 		if(integrated){
 			return;
