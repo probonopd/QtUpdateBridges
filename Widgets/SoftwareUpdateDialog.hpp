@@ -10,7 +10,7 @@
 class SoftwareUpdateDialog : public QDialog {
 	Q_OBJECT
 public:
-	SoftwareUpdateDialog(QPixmap icon = QPixmap(), QWidget *parent = nullptr);
+	SoftwareUpdateDialog(QWidget *parent = nullptr, QPixmap icon = QPixmap(":/logo.png"));
 	~SoftwareUpdateDialog();
 public Q_SLOTS:
 	void init(const QString&,const QString&,const QString&,const QString&);

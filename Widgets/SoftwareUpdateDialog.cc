@@ -10,7 +10,7 @@ static bool isSkipThisVersion(const QString &id,QSettings *settings){
 	return settings->value(hash).toBool();
 }
 
-SoftwareUpdateDialog::SoftwareUpdateDialog(QPixmap icon , QWidget *parent)
+SoftwareUpdateDialog::SoftwareUpdateDialog(QWidget *parent , QPixmap icon)
 	: QDialog(parent)	
 {
 	m_Icon = icon;
@@ -61,14 +61,8 @@ void SoftwareUpdateDialog::init(const QString &AppName , const QString &OldVersi
 	(m_Ui.releaseNotesTxtBox)->setHtml(ReleaseNotes);
 
 
-	/* Set Icons if available, else use updatedeployqt logo. */
-	if(!m_Icon.isNull()){
-			setWindowIcon(m_Icon);
-			(m_Ui.softwareIcon)->setPixmap(m_Icon);
-	}else{
-		/* use updatedeploy logos. */
-	}
-
+	setWindowIcon(m_Icon);
+	(m_Ui.softwareIcon)->setPixmap(m_Icon);
 
 	/* Center the dialog in the primary screen. */
 	this->move(QGuiApplication::primaryScreen()->geometry().center() - this->rect().center());
