@@ -132,6 +132,7 @@ void Bridge::tryIntegrate(){
 				integrated = integrate_menu(widget , this);
 				if(integrated){
 					/* forget about this */
+					qDebug() << "changing const data.";
 					((char*)booleans)[QMENU_GIVEN] = 0;
 				}
 				break;
