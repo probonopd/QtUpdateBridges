@@ -1,8 +1,8 @@
-INCLUDEPATH += .
+INCLUDEPATH += $$PWD
 QT += core gui widgets
 
-HEADERS += SoftwareUpdateDialog.hpp
-SOURCES += SoftwareUpdateDialog.cc
+HEADERS += $$PWD/SoftwareUpdateDialog.hpp
+SOURCES += $$PWD/SoftwareUpdateDialog.cc
 
-RESOURCES += ./resources.qrc
-FORMS += ./SoftwareUpdateDialog.ui ./checkforupdatedialog.ui
+RESOURCES += $$PWD/resources.qrc
+FORMS += $$PWD/SoftwareUpdateDialog.ui 

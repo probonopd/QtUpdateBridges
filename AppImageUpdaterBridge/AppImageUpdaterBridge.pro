@@ -1,4 +1,5 @@
 include(AppImageUpdaterBridge/AppImageUpdaterBridge.pri)
+include(../Widgets/Widgets.pri)
 
 CONFIG += plugin release
 QT += core network

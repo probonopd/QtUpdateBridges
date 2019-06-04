@@ -50,7 +50,7 @@
         </font>
        </property>
        <property name="text">
-        <string>A new version of Your App is available!</string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -89,7 +89,7 @@
         </font>
        </property>
        <property name="text">
-        <string>Your App (sha1 hash) is now available--you have (sha1 hash). Would you like to download it ?</string>
+        <string/>
        </property>
        <property name="alignment">
         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>

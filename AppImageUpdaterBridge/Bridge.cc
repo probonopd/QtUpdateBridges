@@ -4,6 +4,8 @@
 #include <QScreen>
 #include <QDebug>
 #include <AppImageUpdaterBridge>
+#include <AppImageUpdaterDialog>
+#include <SoftwareUpdateDialog.hpp>
 #include <Bridge.hpp>
 
 
@@ -41,20 +43,41 @@ const char *booleans = "4c6160c2d6bfeba1";
 #define INTERVAL_GIVEN 8
 
 using AppImageUpdaterBridge::AppImageDeltaRevisioner;
+using AppImageUpdaterBridge::AppImageUpdaterDialog;
 
 #define IS_SET(s , i) ((s[i] == 1) ? true : false)
 
-static bool integrate_menu(QWidget *widget , AppImageUpdaterDialog *dialog){
-	auto menuBar = qobject_cast<QMenuBar*>(widget);
-	if(!menuBar){
+static bool integrate_menu(QWidget *widget , Bridge *obj){
+	auto menu = qobject_cast<QMenu*>(widget);
+	if(!menu){
 		return false;
 	}
-	auto checkForUpdateAction = menuBar->addAction(QString::fromUtf8("Check for Update"));
-	QObject::connect(checkForUpdateAction , &QAction::triggered , 
-			dialog , &AppImageUpdaterDialog::init , 
-			Qt::QueuedConnection);
+	auto checkForUpdateAction = menu->addAction(QString::fromUtf8("Check for Update"));
+	QObject::connect(checkForUpdateAction , &QAction::triggered ,
+		         obj , &Bridge::checkForUpdate);
 	return true;
 }
+
+static bool integrate_menubar(QWidget *widget , Bridge *obj){
+	auto menubar = qobject_cast<QMenuBar*>(widget);
+	if(!menubar){
+		return false;
+	}
+	auto checkForUpdateAction = menubar->addAction(QString::fromUtf8("Check for Update"));
+	QObject::connect(checkForUpdateAction , &QAction::triggered , 
+			obj , &Bridge::checkForUpdate);
+	return true;
+}
+
+static bool integrate_pushbutton(QWidget *widget , Bridge *obj){
+	auto pushbutton = qobject_cast<QPushButton*>(widget);
+	if(!pushbutton){
+		return false;
+	}
+	QObject::connect(pushbutton , &QPushButton::clicked , obj , &Bridge::checkForUpdate);
+	return true;
+}
+
 
 Bridge::Bridge(QObject *parent)
 	: QObject(parent)
@@ -64,86 +87,97 @@ Bridge::Bridge(QObject *parent)
     if(!instance){
 	    return;
     }
-    m_Updater.reset(new AppImageDeltaRevisioner);
+
+    if(IS_SET(booleans , AUTO_UPDATE_CHECK)){
+	    m_Updater.reset(new AppImageDeltaRevisioner);
+	    connect(m_Updater.data() , &AppImageDeltaRevisioner::updateAvailable , this , &Bridge::handleUpdate);
+	    return;
+    }
+    connect(&m_Timer , &QTimer::timeout , this , &Bridge::tryIntegrate); /* to retry until integration was successful.*/
+}
+
+void Bridge::checkForUpdate(){
+	if(!m_UpdateDialog.isNull()){
+		m_UpdateDialog->move(QGuiApplication::primaryScreen()->geometry().center() - m_UpdateDialog->rect().center());
+		m_UpdateDialog->init();
+		return;
+	}
+	
+	QPixmap icon = QApplication::windowIcon().pixmap(100 , 100);
+	if(icon.isNull()){
+		icon = QPixmap(":/logo.png");
+	}
+
+	m_UpdateDialog.reset(new AppImageUpdaterDialog(icon));
+	m_UpdateDialog->move(QGuiApplication::primaryScreen()->geometry().center() - m_UpdateDialog->rect().center());
+	m_UpdateDialog->init();
+}
+
+void Bridge::handleUpdate(bool isAval , QJsonObject info){
+	if(!isAval){
+		return;
+	}
+
+
+
+}
+
+void Bridge::tryIntegrate(){
+	m_Timer.stop();
+	bool integrated = false;
+	if(IS_SET(booleans , QMENU_GIVEN)){
+		qDebug() << "AppImageUpdaterBridge::INFO: QMenu object name given.";
+		foreach (QWidget *widget, QApplication::allWidgets()){
+			if(widget->objectName() == qmenu_name){
+				integrated = integrate_menu(widget , this);
+				if(integrated){
+					/* forget about this */
+					((char*)booleans)[QMENU_GIVEN] = 0;
+				}
+				break;
+			}
+		}
+	}
+
+	if(IS_SET(booleans , QMENUBAR_GIVEN)){
+		qDebug() << "AppImageUpdaterBridge::INFO: QMenuBar object name given.";
+		foreach (QWidget *widget, QApplication::allWidgets()){
+			if(widget->objectName() == qmenu_name){
+				integrated = integrate_menubar(widget , this);
+				if(integrated){
+					((char*)booleans)[QMENUBAR_GIVEN] = 0;
+				}
+				break;
+			}
+		}
+	}
+
+	if(IS_SET(booleans , QPUSHBUTTON_GIVEN)){
+		qDebug() << "AppImageUpdaterBridge::INFO: QPushButton object name given.";
+		foreach (QWidget *widget, QApplication::allWidgets()){
+			if(widget->objectName() == qmenu_name){
+				integrated = integrate_pushbutton(widget , this);
+				if(integrated){
+					((char*)booleans)[QPUSHBUTTON_GIVEN] = 0;
+				}
+				break;
+			}
+		}
+	}
+
+	if(!integrated){
+		m_Timer.setInterval(5000);
+		m_Timer.setSingleShot(true);
+		m_Timer.start();
+	}
+	return;
 }
 
 void Bridge::initAutoUpdate()
 {
-	if(m_Updater.isNull()){
+	if(IS_SET(booleans , MANUAL_UPDATE_CHECK)){	
+		tryIntegrate();
 		return;
 	}
-
-	if(IS_SET(booleans , MANUAL_UPDATE_CHECK)){	
-		qDebug() << "AppImageUpdaterBridge::INFO: manual update enabled";
-		bool integrated = false;
-
-		if(IS_SET(booleans , QMENU_GIVEN)){
-			qDebug() << "AppImageUpdaterBridge::INFO: QMenu object name given.";
-			foreach (QWidget *widget, QApplication::allWidgets()){
-				if(widget->objectName() == qmenu_name){
-					integrated = integrate_menu(widget , m_Dialog.data());
-					break;
-				}
-			}
-		}
-
-
-		if(integrated){
-			return;
-		}
-
-		qDebug() << "AppImageUpdaterBridge::INFO: cannot find the required QObject";
-		qDebug() << "AppImageUpdaterBridge::INFO: trying to integrate into available QMenuBar";
-		foreach (QWidget *widget , QApplication::allWidgets()){
-			/* Try and check if its QMenuBar ,
-			 * if so then simply integrate */
-			if((integrated = integrate_menu(widget , m_Dialog.data()))){	
-				break;
-			}
-			QCoreApplication::processEvents();
-		}
-
-		if(integrated){
-			return;
-		}
-
-		qDebug() << "AppImageUpdaterBridge::INFO: cannot find QMenuBar , trying to integrate into QMainWindow";
-		foreach (QWidget *widget , QApplication::allWidgets()){
-			auto mainWindow = qobject_cast<QMainWindow*>(widget);
-			if(!mainWindow){
-				QCoreApplication::processEvents();
-				continue;
-			}
-
-			/* First lets check if the main window has any QMenuBar. */
-			auto children = mainWindow->children();
-			foreach(QObject *bar , children){
-				if((integrated = integrate_menu(widget , m_Dialog.data()))){	
-					break;
-				}
-				QCoreApplication::processEvents();
-			}
-
-			if(integrated){
-				break;
-			}
-
-			/* Its confirmed that we don't have any QMenuBar. */
-			auto menuBar = new QMenuBar(mainWindow);
-        		menuBar->setObjectName(QString::fromUtf8("menuBar"));
-			menuBar->setGeometry(QRect(0, 0, mainWindow->size().width() , 25));
-			integrated = integrate_menu(menuBar , m_Dialog.data());
-			QCoreApplication::processEvents();
-			break;
-		}
-
-		if(integrated){
-			return;
-		}
-		qDebug() << "AppImageUpdaterBridge::INFO: find anyway to integrate QMenuBar , giving up.";
-		return; /* return control */	
-	}
- 
-	m_Dialog->init();
 	return;
 }
