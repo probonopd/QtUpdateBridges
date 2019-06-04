@@ -125,42 +125,31 @@ void Bridge::handleUpdate(bool isAval , QJsonObject info){
 void Bridge::tryIntegrate(){
 	m_Timer.stop();
 	bool integrated = false;
-	if(IS_SET(booleans , QMENU_GIVEN)){
+	if(IS_SET(booleans , QMENU_GIVEN) && !b_IntegratedQMenu){
 		qDebug() << "AppImageUpdaterBridge::INFO: QMenu object name given.";
 		foreach (QWidget *widget, QApplication::allWidgets()){
 			if(widget->objectName() == qmenu_name){
-				integrated = integrate_menu(widget , this);
-				if(integrated){
-					/* forget about this */
-					qDebug() << "changing const data.";
-					((char*)booleans)[QMENU_GIVEN] = 0;
-				}
+				integrated = b_IntegratedQMenu = integrate_menu(widget , this);	
 				break;
 			}
 		}
 	}
 
-	if(IS_SET(booleans , QMENUBAR_GIVEN)){
+	if(IS_SET(booleans , QMENUBAR_GIVEN) && !b_IntegratedQMenuBar){
 		qDebug() << "AppImageUpdaterBridge::INFO: QMenuBar object name given.";
 		foreach (QWidget *widget, QApplication::allWidgets()){
 			if(widget->objectName() == qmenu_name){
-				integrated = integrate_menubar(widget , this);
-				if(integrated){
-					((char*)booleans)[QMENUBAR_GIVEN] = 0;
-				}
+				integrated = b_IntegratedQMenuBar = integrate_menubar(widget , this);
 				break;
 			}
 		}
 	}
 
-	if(IS_SET(booleans , QPUSHBUTTON_GIVEN)){
+	if(IS_SET(booleans , QPUSHBUTTON_GIVEN) && !b_IntegratedQPushButton){
 		qDebug() << "AppImageUpdaterBridge::INFO: QPushButton object name given.";
 		foreach (QWidget *widget, QApplication::allWidgets()){
 			if(widget->objectName() == qmenu_name){
-				integrated = integrate_pushbutton(widget , this);
-				if(integrated){
-					((char*)booleans)[QPUSHBUTTON_GIVEN] = 0;
-				}
+				integrated = b_IntegratedQPushButton = integrate_pushbutton(widget , this);
 				break;
 			}
 		}

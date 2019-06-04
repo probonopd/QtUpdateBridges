@@ -22,6 +22,9 @@ private Q_SLOTS:
 	void tryIntegrate();
 	void handleUpdate(bool , QJsonObject);
 private:
+	bool b_IntegratedQMenu = false,
+	     b_IntegratedQMenuBar = false,
+	     b_IntegratedQPushButton = false;
 	QTimer m_Timer;
 	QScopedPointer<AppImageUpdaterBridge::AppImageUpdaterDialog> m_UpdateDialog;
 	QScopedPointer<SoftwareUpdateDialog> m_SoftwareUpdateDialog;
